@@ -21,7 +21,7 @@ NGINX_PATH := /etc/nginx
 SYSTEMD_PATH := /etc/systemd/system
 
 NGINX_LOG := /var/log/nginx/access.log
-DB_SLOW_LOG := /var/log/mysql/slow-query.log
+DB_SLOW_LOG := /tmp/slow-query.log
 
 .PHONY: setup
 setup: install-tools git-setup migrate-service
@@ -37,6 +37,7 @@ bench: check-server-id mv-logs build deploy-conf restart watch-service-log
 
 .PHONY: bench-dev
 bench-dev: bench
+	sleep 1
 	/bin/sh bench.sh
 
 .PHONY: alp
@@ -181,3 +182,8 @@ clean:
 	rm -rf $(PROJECT_ROOT)/logs/*
 	mkdir -p $(PROJECT_ROOT)/logs
 	touch $(PROJECT_ROOT)/logs/.keep
+
+.PHONY: test
+test:
+	# 何か実験したい時にここに書く
+	:

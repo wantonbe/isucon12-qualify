@@ -63,7 +63,7 @@ log_error = /var/log/mysql/error.log
 #
 # Here you can see queries with especially long duration
 slow_query_log		= 1
-slow_query_log_file	= /var/log/mysql/slow-query.log
+slow_query_log_file	= /tmp/slow-query.log
 long_query_time = 0
 # log-queries-not-using-indexes
 #
