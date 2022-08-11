@@ -42,7 +42,7 @@ bench-dev: bench
 
 .PHONY: alp
 alp:
-	sudo alp json --file=$(NGINX_LOG) --sort sum -r -o count,method,uri,min,avg,max,sum
+	sudo alp json --file=$(NGINX_LOG) --config=./tool-config/alp/config.yml
 
 .PHONY: slow-query
 slow-query:
