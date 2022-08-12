@@ -15,6 +15,14 @@ RUN docker-php-ext-configure zip && \
   docker-php-ext-install zip && \
   docker-php-ext-install pdo_mysql
 
+RUN \
+  sed -i \
+    -e 's/pm.max_children = 5/pm.max_children = 40/' \
+    -e 's/pm.start_servers = 2/pm.start_servers = 16/' \
+    -e 's/pm.min_spare_servers = 1/pm.min_spare_servers = 8/' \
+    -e 's/pm.max_spare_servers = 3/pm.max_spare_servers = 24/' \
+    /usr/local/etc/php-fpm.d/www.conf
+
 RUN useradd --uid=1001 --create-home isucon
 USER isucon
 RUN mkdir -p /home/isucon/webapp/php
