@@ -10,11 +10,11 @@ limit:                      # 5000
 noheaders:                  # boolean
 show_footers:               # boolean
 matching_groups:            # array
-  - /api/player/player/[\w]+
-  - /api/player/competition/[\w]+/ranking
-  - /api/organizer/competition/[\w]+/finish
-  - /api/organizer/competition/[\w]+/score
-  - /api/organizer/player/[\w]+/disqualified
+  - /api/player/player/[\w-]+
+  - /api/player/competition/[\w-]+/ranking
+  - /api/organizer/competition/[\w-]+/finish
+  - /api/organizer/competition/[\w-]+/score
+  - /api/organizer/player/[\w-]+/disqualified
 filters:                    # string
 output:                     count,method,uri,sum,min,avg,max,p99,p95 # string(comma separated)
 pos_file:                   # string
