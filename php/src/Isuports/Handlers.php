@@ -377,7 +377,7 @@ class Handlers
         }
 
         // ランキングにアクセスした参加者のIDを取得する
-        $vhs = $this->adminDB->prepare('SELECT player_id, MIN(created_at) AS min_created_at FROM visit_history WHERE tenant_id = ? AND competition_id = ? GROUP BY player_id')
+        $vhs = $this->adminDB->prepare('SELECT player_id, MIN(created_at) AS min_created_at FROM visit_history_summary WHERE tenant_id = ? AND competition_id = ? GROUP BY player_id')
             ->executeQuery([$tenantID, $comp->id])
             ->fetchAllAssociative();
 
@@ -787,9 +787,15 @@ class Handlers
         $tenantDB->prepare('DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?')
             ->executeStatement([$v->tenantID, $competitionID]);
 
+        $stored_player_ids = [];
         foreach ($playerScoreRows as $ps) {
+            if (in_array($ps["player_id"], $stored_player_ids)) {
+                continue;
+            }
+
             $tenantDB->prepare('INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)')
                 ->executeStatement($ps);
+            $stored_player_ids[] = $ps["player_id"];
         }
 
         $tenantDB->close();
@@ -954,8 +960,8 @@ class Handlers
             throw new RuntimeException(sprintf('error Select tenant: id=%d', $v->tenantID));
         }
 
-        $this->adminDB->prepare('INSERT INTO visit_history (player_id, tenant_id, competition_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
-            ->executeStatement([$v->playerID, $tenant['id'], $competitionID, $now, $now]);
+        $this->adminDB->prepare('INSERT INTO visit_history_summary (player_id, tenant_id, competition_id, created_at) VALUES (?, ?, ?, ?)')
+            ->executeStatement([$v->playerID, $tenant['id'], $competitionID, $now]);
 
         $rankAfter = 0;
         $rankAfterStr = $request->getQueryParams()['rank_after'] ?? '';
