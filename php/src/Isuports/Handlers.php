@@ -381,9 +381,6 @@ class Handlers
             $billingMap[$vh['player_id']] = 'visitor';
         }
 
-        // player_scoreを読んでいるときに更新が走ると不整合が起こるのでロックを取得する
-        $fl = $this->flockByTenantID($tenantID);
-
         // スコアを登録した参加者のIDを取得する
         $scoredPlayerIDs = $tenantDB->prepare('SELECT DISTINCT(player_id) FROM player_score WHERE tenant_id = ? AND competition_id = ?')
             ->executeQuery([$tenantID, $comp->id])
@@ -401,8 +398,6 @@ class Handlers
             $playerCount = $counts['player'] ?? 0;
             $visitorCount =  $counts['visitor'] ?? 0;
         }
-
-        fclose($fl);
 
         return new BillingReport(
             competitionID: $comp->id,
@@ -732,8 +727,7 @@ class Handlers
                 throw new HttpBadRequestException($request, 'invalid CSV headers');
             }
 
-            // / DELETEしたタイミングで参照が来ると空っぽのランキングになるのでロックする
-            $fl = $this->flockByTenantID($v->tenantID);
+            $tenantDB->executeQuery("BEGIN");
 
             $rowNum = 0;
             /** @var list<array<string, mixed>> $playerScoreRows */
@@ -769,27 +763,30 @@ class Handlers
                     'updated_at' => $now,
                 ];
             }
+
+
+            $tenantDB->prepare('DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?')
+                ->executeStatement([$v->tenantID, $competitionID]);
+
+            $stored_player_ids = [];
+            foreach ($playerScoreRows as $ps) {
+                if (in_array($ps["player_id"], $stored_player_ids)) {
+                    continue;
+                }
+
+                $tenantDB->prepare('INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)')
+                    ->executeStatement($ps);
+                $stored_player_ids[] = $ps["player_id"];
+            }
+            $tenantDB->executeQuery("COMMIT");
+        } catch (Exception $e) {
+            $tenantDB->executeQuery("ROLLBACK");
         } finally {
             fclose($fh);
             unlink($tmpFilePath);
         }
 
-        $tenantDB->prepare('DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?')
-            ->executeStatement([$v->tenantID, $competitionID]);
-
-        $stored_player_ids = [];
-        foreach ($playerScoreRows as $ps) {
-            if (in_array($ps["player_id"], $stored_player_ids)) {
-                continue;
-            }
-
-            $tenantDB->prepare('INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)')
-                ->executeStatement($ps);
-            $stored_player_ids[] = $ps["player_id"];
-        }
-
         $tenantDB->close();
-        fclose($fl);
 
         return $this->jsonResponse($response, new SuccessResult(
             success: true,
@@ -866,9 +863,6 @@ class Handlers
             ->executeQuery([$v->tenantID])
             ->fetchAllAssociative();
 
-        // player_scoreを読んでいるときに更新が走ると不整合が起こるのでロックを取得する
-        $fl = $this->flockByTenantID($v->tenantID);
-
         $pss = [];
         foreach ($cs as $c) {
             $ps = $tenantDB->prepare('SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? AND player_id = ? ORDER BY row_num DESC LIMIT 1')
@@ -909,7 +903,6 @@ class Handlers
         );
 
         $tenantDB->close();
-        fclose($fl);
 
         return $this->jsonResponse($response, $res);
     }
@@ -961,9 +954,6 @@ class Handlers
                 throw new RuntimeException(sprintf('error filter_var: rankAfterStr=%s', $rankAfterStr));
             }
         }
-
-        // player_scoreを読んでいるときに更新が走ると不整合が起こるのでロックを取得する
-        $fl = $this->flockByTenantID($v->tenantID);
 
         $pss = $tenantDB->prepare('SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? ORDER BY row_num DESC')
             ->executeQuery([$tenant['id'], $competitionID])
@@ -1027,7 +1017,6 @@ class Handlers
         );
 
         $tenantDB->close();
-        fclose($fl);
 
         return $this->jsonResponse($response, $res);
     }
