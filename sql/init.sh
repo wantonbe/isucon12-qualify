@@ -19,3 +19,8 @@ mysql -u"$ISUCON_DB_USER" \
 # SQLiteのデータベースを初期化
 rm -f ../tenant_db/*.db
 cp -r ../../initial_data/*.db ../tenant_db/
+
+for db in $(ls ../tenant_db/*.db)
+do
+  sqlite3 $db < player_score_summary.sql
+done
