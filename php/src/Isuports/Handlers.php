@@ -957,7 +957,15 @@ class Handlers
             }
         }
 
-        $pss = $tenantDB->prepare('SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? ORDER BY row_num DESC')
+        $pss = $tenantDB->prepare(<<<_SQL_
+            SELECT ps.score, ps.player_id, ps.row_num, p.display_name
+            FROM player_score AS ps
+            INNER JOIN player AS p ON p.id = ps.player_id
+            WHERE ps.tenant_id = ?
+            AND ps.competition_id = ?
+            ORDER BY ps.row_num DESC
+        _SQL_
+        )
             ->executeQuery([$tenant['id'], $competitionID])
             ->fetchAllAssociative();
 
@@ -972,12 +980,11 @@ class Handlers
                 continue;
             }
             $scoredPlayerSet[$ps['player_id']] = null;
-            $p = $this->retrievePlayer($tenantDB, $ps['player_id']);
 
             $ranks[] = new CompetitionRank(
                 score: $ps['score'],
-                playerID: $p->id,
-                playerDisplayName: $p->displayName,
+                playerID: $ps['player_id'],
+                playerDisplayName: $ps['display_name'],
                 rowNum: $ps['row_num'],
             );
         }
