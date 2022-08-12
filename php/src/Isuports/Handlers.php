@@ -36,6 +36,9 @@ class Handlers
     // 正しいテナント名の正規表現
     private const TENANT_NAME_REGEXP = '/^[a-z][a-z0-9-]{0,61}[a-z0-9]$/';
 
+    // UUID
+    private const UUID_PATTERN = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+
     public function __construct(
         private Connection $adminDB,
         private Configuration $sqliteConfiguration, // sqliteのクエリログを出力する設定
@@ -85,30 +88,17 @@ class Handlers
      */
     private function dispenseID(): string
     {
-        $id = 0;
-        /** @var ?\Exception $lastErr */
-        $lastErr = null;
-        for ($i = 0; $i < 100; $i++) {
-            try {
-                $this->adminDB->prepare('REPLACE INTO id_generator (stub) VALUES (?);')
-                    ->executeStatement(['a']);
-            } catch (DBException $e) {
-                if ($e->getCode() === 1213) { // deadlock
-                    $lastErr = $e;
-                    continue;
-                }
-                throw $e;
-            }
+        $chars = str_split(self::UUID_PATTERN);
 
-            $id = $this->adminDB->lastInsertId();
-            break;
+        foreach ($chars as $i => $char) {
+            $chars[$i] = match ($char) {
+                "x" => dechex(random_int(0, 15)),
+                "y" => dechex(random_int(8, 11)),
+                default => $char,
+            };
         }
 
-        if ($id !== 0) {
-            return sprintf('%x', $id);
-        }
-
-        throw $lastErr;
+        return implode("", $chars);
     }
 
     /**
