@@ -177,6 +177,10 @@ restart:
 watch-service-log:
 	:
 
+.PHONY: journal
+journal:
+	sudo journalctl -u $(SERVICE_NAME) -n 100 -f
+
 .PHONY: clean
 clean:
 	rm -rf $(PROJECT_ROOT)/logs/*
