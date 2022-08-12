@@ -51,6 +51,20 @@ ifeq ("$(wildcard $(DB_SLOW_LOG))", "")
 endif
 	sudo pt-query-digest $(DB_SLOW_LOG)
 
+.PHONY: alp-diff
+.ONESHELL:
+alp-diff:
+	@read -p "compare filepath: " filepath; \
+	(
+		echo $$filepath
+		sudo cat $(NGINX_LOG) | alp json --config=./tool-config/alp/config.yml --dump current.yml
+		sudo cat $$filepath | alp json --config=./tool-config/alp/config.yml --dump $(basename $(dirname $(dirname $$filepath))).yml
+		alp diff $(basename $(dirname $(dirname $$filepath))).yml current.yml -o count,method,uri,sum,min,avg,max,p99,p95 --sort=count -r --show-footers
+
+		rm current.yml $(basename $(dirname $(dirname $$filepath))).yml
+	)
+
+
 #
 # サブコマンド
 #
