@@ -768,16 +768,18 @@ class Handlers
             $tenantDB->prepare('DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?')
                 ->executeStatement([$v->tenantID, $competitionID]);
 
-            $stored_player_ids = [];
+            $stored_players = [];
+            $statements = [];
             foreach ($playerScoreRows as $ps) {
-                if (in_array($ps["player_id"], $stored_player_ids)) {
+                if (isset($stored_players[$ps["player_id"]])) {
                     continue;
                 }
-
-                $tenantDB->prepare('INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)')
-                    ->executeStatement($ps);
-                $stored_player_ids[] = $ps["player_id"];
+                $stored_players[$ps["player_id"]] = $ps;
+                $statements[] = sprintf('("%s", "%s", "%s", "%s", %d, %d, %d, %d)',
+                    $ps["id"], $ps["tenant_id"], $ps["player_id"], $ps["competition_id"], $ps["score"], $ps["row_num"], $ps["created_at"], $ps["updated_at"]);
             }
+
+            $tenantDB->executeQuery(sprintf("INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES %s", implode(", ", $statements)));
             $tenantDB->executeQuery("COMMIT");
         } catch (Exception $e) {
             $tenantDB->executeQuery("ROLLBACK");
