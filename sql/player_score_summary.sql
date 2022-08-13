@@ -15,3 +15,4 @@ ALTER TABLE player_score RENAME TO player_score_org;
 ALTER TABLE player_score_summmary RENAME TO player_score;
 
 CREATE INDEX player_score_idx01 ON player_score(tenant_id, competition_id, row_num);
+CREATE INDEX player_score_idx02 ON player_score(player_id, competition_id);
