@@ -861,33 +861,15 @@ class Handlers
             throw new HttpNotFoundException($request, 'player not found');
         }
 
-        $cs = $tenantDB->prepare('SELECT * FROM competition WHERE tenant_id = ? ORDER BY created_at ASC')
-            ->executeQuery([$v->tenantID])
+        $pss = $tenantDB->prepare('SELECT c.title, ps.score FROM competition AS c INNER JOIN player_score AS ps ON ps.competition_id = c.id WHERE ps.player_id = ? ORDER BY c.created_at ASC')
+            ->executeQuery([$p->id])
             ->fetchAllAssociative();
-
-        $pss = [];
-        foreach ($cs as $c) {
-            $ps = $tenantDB->prepare('SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? AND player_id = ? ORDER BY row_num DESC LIMIT 1')
-                ->executeQuery([$v->tenantID, $c['id'], $p->id])
-                ->fetchAssociative();
-            // 行がない = スコアが記録されてない
-            if ($ps === false) {
-                continue;
-            }
-
-            $pss[] = $ps;
-        }
 
         /** @var list<PlayerScoreDetail> $psds */
         $psds = [];
         foreach ($pss as $ps) {
-            $comp = $this->retrieveCompetition($tenantDB, $ps['competition_id']);
-            if (is_null($comp)) {
-                throw new RuntimeException('error retrieveCompetition');
-            }
-
             $psds[] = new PlayerScoreDetail(
-                competitionTitle: $comp->title,
+                competitionTitle: $ps['title'],
                 score: $ps['score'],
             );
         }
