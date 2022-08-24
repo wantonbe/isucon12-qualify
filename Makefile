@@ -23,6 +23,8 @@ SYSTEMD_PATH := /etc/systemd/system
 NGINX_LOG := /var/log/nginx/access.log
 DB_SLOW_LOG := /tmp/slow-query.log
 
+$(eval ARCH := $(shell uname -m))
+
 .PHONY: setup
 setup: install-tools git-setup migrate-service
 
@@ -75,8 +77,11 @@ install-tools:
 	sudo apt-get -y install percona-toolkit htop dstat git unzip tree
 
 	# alp
-	# curl -L https://github.com/tkuchiki/alp/releases/download/v1.0.10/alp_linux_amd64.zip -o alp.zip
+ifeq ($(ARCH), "x86_64")
+	curl -L https://github.com/tkuchiki/alp/releases/download/v1.0.10/alp_linux_amd64.zip -o alp.zip
+else
 	curl -L https://github.com/tkuchiki/alp/releases/download/v1.0.10/alp_linux_arm64.zip -o alp.zip
+endif
 	unzip alp.zip
 	sudo install alp /usr/local/bin/alp
 	rm alp alp.zip
