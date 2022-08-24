@@ -173,7 +173,7 @@ ifneq ("$(wildcard $(DB_SLOW_LOG))", "")
 endif
 
 .PHONY: build
-buidl:
+build:
 	:
 
 .PHONY: deploy-conf
