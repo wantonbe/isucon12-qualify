@@ -77,7 +77,7 @@ install-tools:
 	sudo apt-get -y install percona-toolkit htop dstat git unzip tree
 
 	# alp
-ifeq ($(ARCH), "x86_64")
+ifeq ($(ARCH), x86_64)
 	curl -L https://github.com/tkuchiki/alp/releases/download/v1.0.10/alp_linux_amd64.zip -o alp.zip
 else
 	curl -L https://github.com/tkuchiki/alp/releases/download/v1.0.10/alp_linux_arm64.zip -o alp.zip
